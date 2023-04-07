@@ -1,6 +1,6 @@
 import SearchService from "./search";
-import Notiflix from "notiflix";
 import axios from 'axios';
+import { Notify } from "notiflix";
 const axios = require('axios');
 
 const searchService = new SearchService();
@@ -17,7 +17,6 @@ refs.load.addEventListener('click', onLoadMore)
 
 function onSearch(e) {
   e.preventDefault();
-  refs.load.classList.remove('hide')
 
   try {
     searchService.query = e.currentTarget.elements.searchQuery.value;
@@ -25,14 +24,14 @@ function onSearch(e) {
     searchService.fetchArticles().then(({ hits, totalHits }) => {
       clearMarkup();
       if (hits.length === 0) {
-        return Notiflix.Notify.failure(
+        return Notify.failure(
           'Sorry, there are no images matching your search query. Please try again.',
           { clickToClose: true }
         );
       }
-      renderSearchMarkup(hits);
-      gallery.refresh();
-      Notiflix.Notify.info(`Hooray! We found ${totalHits} images.`, {
+      createMarkup(hits);
+      refs.load.classList.remove('hide')
+      Notify.success(`Hooray! We found ${totalHits} images.`, {
         clickToClose: true,
       });
     });
@@ -41,7 +40,7 @@ function onSearch(e) {
   }
 }
 
-function renderSearchMarkup(hits) {
+function createMarkup(hits) {
   const markup = hits
     .map(
       ({
@@ -85,3 +84,18 @@ function renderSearchMarkup(hits) {
 function clearMarkup() {
   refs.galleryContainer.innerHTML = '';
 }
+
+function onLoadMore() {
+  try {
+    searchService.fetchArticles().then(({ hits, totalHits }) => {
+      if (searchService.loadPages > totalHits) {
+        createMarkup(hits);
+        return Notify.warning(
+          "We're sorry, but you've reached the end of search results."
+        );
+      }
+      createMarkup(hits);
+    });
+  } catch (error) {
+    console.log(error);
+  }}
